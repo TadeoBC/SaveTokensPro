@@ -15,25 +15,51 @@ function guardar(entrada, cfg) {
   const rl = entrada.rate_limits;
   if (!rl || (!rl.five_hour && !rl.seven_day)) return;
   const previo = leerJson(RUTA.estado, {});
+  const ahora = Date.now();
+
+  // Gasto propio: el costo acumulado de CADA sesión de esta persona. Si sube,
+  // esta persona acaba de recibir una respuesta. Sirve para separar su consumo
+  // del de quien comparta la cuenta desde otro lado (Desktop, web).
+  const sesiones = { ...(previo.sesiones || {}) };
+  let propio = Number(previo.propio || 0);
+  const sid = entrada.session_id;
+  const costo = Number(entrada.cost?.total_cost_usd);
+  if (sid && Number.isFinite(costo)) {
+    const antes = sesiones[sid]?.costo;
+    // Una sesión nueva (o un /clear, que reinicia el costo) cuenta desde cero.
+    const delta = antes === undefined || costo < antes ? costo : costo - antes;
+    propio += Math.max(0, delta);
+    sesiones[sid] = { costo, visto: ahora };
+  }
+  // Sólo se guardan las sesiones de los últimos 2 días.
+  for (const k of Object.keys(sesiones)) if (ahora - sesiones[k].visto > 2 * 86400000) delete sesiones[k];
+  const respondio = propio > Number(previo.propio || 0) + 1e-9;
+
   const estado = {
-    actualizado: Date.now(),
+    actualizado: ahora,
     persona: cfg.persona || null,
     five_hour: rl.five_hour || previo.five_hour || null,
     seven_day: rl.seven_day || previo.seven_day || null,
     modelo: entrada.model?.display_name || null,
+    propio: Number(propio.toFixed(6)),
+    sesiones,
+    ultimaActividad: respondio ? ahora : previo.ultimaActividad || null,
   };
-  try { escribirJson(RUTA.estado, estado); } catch {}
-  // Historial: una línea cuando cambia algún porcentaje entero.
+  // Historial: una línea cuando cambia el porcentaje, y también cuando esta
+  // persona trabaja (como mucho una cada 2 min) para saber cuándo estuvo activa.
   const firma = `${Math.floor(estado.five_hour?.used_percentage ?? -1)}|${Math.floor(estado.seven_day?.used_percentage ?? -1)}`;
-  if (firma !== previo.firma) {
+  const latido = respondio && ahora - (previo.ultimaLinea || 0) > 120000;
+  let ultimaLinea = previo.ultimaLinea || 0;
+  if (firma !== previo.firma || latido) {
     try {
-      fs.appendFileSync(RUTA.historial, JSON.stringify({ t: estado.actualizado, persona: estado.persona, modelo: estado.modelo,
-        h5: estado.five_hour?.used_percentage ?? null, sem: estado.seven_day?.used_percentage ?? null }) + '\n');
-      escribirJson(RUTA.estado, { ...estado, firma });
+      fs.appendFileSync(RUTA.historial, JSON.stringify({ t: ahora, persona: estado.persona, modelo: estado.modelo,
+        h5: estado.five_hour?.used_percentage ?? null, sem: estado.seven_day?.used_percentage ?? null,
+        h5Reinicia: estado.five_hour?.resets_at ?? null, semReinicia: estado.seven_day?.resets_at ?? null,
+        propio: estado.propio }) + '\n');
+      ultimaLinea = ahora;
     } catch {}
-  } else {
-    try { escribirJson(RUTA.estado, { ...estado, firma }); } catch {}
   }
+  try { escribirJson(RUTA.estado, { ...estado, firma, ultimaLinea }); } catch {}
 }
 
 let crudo = '';

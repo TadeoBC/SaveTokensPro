@@ -35,6 +35,7 @@ Luego edita `config.json` (tu nombre, horario y perfiles) y abre Claude Code. Op
 /consumo                      estado y recomendación
 /consumo relleno              ¿conviene gastar lo que queda antes del reinicio?
 /consumo registrar marketing "posts de la semana"
+/consumo sync                 reparte el consumo entre tú y quien use la cuenta desde Desktop
 /consumo plan                 reparto por persona y categoría (tablero)
 /consumo horario 06:00 21:00  cambia las horas del ping
 /consumo pausa | reanuda | log
@@ -62,6 +63,15 @@ Reglas que aprendimos a la mala:
 3. Si un agente se cortó, el siguiente debe saber qué quedó a medias (`git diff`).
 4. Nunca des por bueno el reporte del otro agente: verifica tú.
 5. Dos agentes que escriben nunca sobre los mismos archivos a la vez.
+
+### Una cuenta, dos lugares (CLI + Desktop)
+
+Si alguien más usa la misma cuenta desde Claude Desktop o la web, no necesita instalar nada. Pon su nombre en `config.json` → `compartir.otraPersona`. Tu status line anota cuándo trabajas tú (por el costo de tus sesiones), y `/consumo sync` reparte cada subida del % semanal:
+
+- **Te toca a ti:** lo que subió mientras estabas activo.
+- **Le toca a la otra persona:** lo que subió en un hueco de más de `compartir.huecoMin` minutos (15 por defecto) sin actividad tuya.
+
+Los registros se suben solos al tablero. La otra persona sólo abre el tablero cuando quiera ver cómo van o anotar en qué categoría gastó. Si los dos usan la cuenta al mismo tiempo, ese tramo se te cuenta a ti: es una aproximación.
 
 ### Tablero compartido
 

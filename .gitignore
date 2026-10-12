@@ -6,6 +6,9 @@ historial.jsonl
 ping-estado.json
 ping.log
 ultimo-registro.json
+sync.json
+sync-pendiente.json
+sync/
 encargos/
 *.tmp
 .DS_Store

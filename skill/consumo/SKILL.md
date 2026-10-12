@@ -25,6 +25,13 @@ Responde en el idioma del usuario, corto y con números.
 - El límite semanal del modelo premium NO viene en la status line: si importa, pide verlo con `/usage`.
 - Cierra con una recomendación de una línea (seguir, bajar de modelo, rellenar, delegar o parar).
 
+**`sync [categoría]`** (corre también, sin que lo pidan, al final de `estado` y antes de `registrar` cuando `tablero` y `compartir.otraPersona` están configurados):
+1. Corre `node __HOME_SAVETOKENS__/scripts/registro.js sync <categoría>`. Reparte lo consumido desde la última sincronización: lo que subió mientras esta persona trabajaba es suyo; lo que subió en un hueco de más de `compartir.huecoMin` minutos sin actividad suya es de `compartir.otraPersona` (que usa la misma cuenta desde otro lado, p. ej. Claude Desktop).
+2. Si trae `registros`, súbelos todos en UNA llamada `ArtifactData` `batch` al `tablero`: una entrada `{op: "set", collection: "registros", doc_id, file_path: archivo}` por registro (documentos nuevos, sin `if_version`).
+3. Sólo si el batch salió bien, corre `node __HOME_SAVETOKENS__/scripts/registro.js confirmar`. Si falló, no confirmes: la próxima vez se reintenta lo mismo.
+4. Resume en una línea: cuánto % fue de cada persona.
+Es una aproximación: si las dos personas usan la cuenta al mismo tiempo, ese tramo se le cuenta a esta.
+
 **`registrar [categoría] [nota]`** (categorías sugeridas: programación, integraciones, ideas, marketing, personal):
 1. Corre `node __HOME_SAVETOKENS__/scripts/registro.js <categoría> <nota>`.
 2. Con la salida, escribe con `ArtifactData`: acción `set`, `url` = `tablero`, `collection` = `registros`, `doc_id` = el `doc_id` de la salida, `file_path` = el `archivo` de la salida (documento nuevo, sin `if_version`).
