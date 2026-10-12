@@ -1,0 +1,11 @@
+# Datos personales y de uso: nunca al repo
+config.json
+backlog-relleno.md
+estado.json
+historial.jsonl
+ping-estado.json
+ping.log
+ultimo-registro.json
+encargos/
+*.tmp
+.DS_Store

@@ -1,0 +1,314 @@
+<title>Cuota Max compartida</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: tablero de una columna; arriba el estado (ventana + semana), luego reparto, gráfica y bitácora. */
+:root {
+  --bg: #f3f4f7; --panel: #ffffff; --fg: #1b1f2a; --muted: #5f6678; --line: #dfe2ea;
+  --accent: #3b5bdb; --accent-soft: #e3e9ff;
+  --ok: #1f8a52; --warn: #b7791f; --bad: #c2362f;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Figtree", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12141b; --panel: #1a1d27; --fg: #e8eaf1; --muted: #9aa1b4; --line: #2a2e3b;
+  --accent: #8ea4ff; --accent-soft: #252c4a; --ok: #4cc488; --warn: #e3a948; --bad: #f0716a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12141b; --panel: #1a1d27; --fg: #e8eaf1; --muted: #9aa1b4; --line: #2a2e3b;
+  --accent: #8ea4ff; --accent-soft: #252c4a; --ok: #4cc488; --warn: #e3a948; --bad: #f0716a; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--body); margin: 0 }
+.wrap { max-width: 980px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 48px; display: grid; gap: 20px }
+h1 { font: 700 clamp(1.6rem, 4vw, 2.2rem)/1.1 var(--display); margin: 0; text-wrap: balance }
+h2 { font: 600 1.05rem/1.2 var(--display); margin: 0 }
+.sub { color: var(--muted); margin: 4px 0 0 }
+.eyebrow { font: 600 .72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 14px; min-width: 0 }
+.grid2 { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) }
+.estado { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) }
+.medidor { display: grid; gap: 8px }
+.medidor .grande { font: 600 2.4rem/1 var(--mono); font-variant-numeric: tabular-nums }
+.pista { height: 10px; border-radius: 5px; background: var(--accent-soft); position: relative; overflow: hidden }
+.pista > i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 5px }
+.pista > b { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--fg); opacity: .6 }
+.pill { display: inline-flex; align-items: center; gap: 6px; font: 600 .78rem var(--body); padding: 3px 10px; border-radius: 99px; border: 1px solid currentColor }
+.pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor }
+.verde { color: var(--ok) } .amarillo { color: var(--warn) } .rojo { color: var(--bad) }
+.fila { display: grid; grid-template-columns: minmax(90px, 140px) 1fr auto; gap: 10px; align-items: center }
+.fila .pista { height: 8px }
+.vacio { color: var(--muted); font-size: .92rem }
+svg text { fill: var(--muted); font: 11px var(--mono) }
+form { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); align-items: end }
+label { display: grid; gap: 4px; font-size: .82rem; color: var(--muted) }
+input, select { font: 15px var(--body); padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); min-width: 0 }
+button { font: 600 14px var(--body); padding: 9px 14px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: var(--panel); cursor: pointer }
+button.sec { background: transparent; color: var(--accent) }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.tabla { overflow-x: auto }
+table { width: 100%; border-collapse: collapse; font-size: .9rem }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap }
+th { font: 600 .72rem var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted) }
+td.nota { white-space: normal; min-width: 160px }
+.aviso { padding: 10px 12px; border-radius: 8px; background: var(--accent-soft); font-size: .92rem }
+.reparto { display: grid; gap: 8px }
+.reparto .fila input { width: 70px }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Claude Max · cuenta compartida</div>
+    <h1>Cuota Max compartida</h1>
+    <p class="sub">Ventana de 5 h, ritmo semanal y quién gastó qué. Los registros llegan solos desde <span class="num">/consumo</span> en Claude Code, o a mano abajo.</p>
+  </header>
+
+  <section class="estado">
+    <div class="panel medidor" aria-live="polite">
+      <div class="eyebrow">Ventana de 5 horas</div>
+      <div class="grande" id="h5">—</div>
+      <div class="pista"><i id="h5Barra" style="width:0"></i></div>
+      <div class="sub" id="h5Texto">Sin registros todavía.</div>
+    </div>
+    <div class="panel medidor">
+      <div class="eyebrow">Semana</div>
+      <div style="display:flex;gap:12px;align-items:baseline;flex-wrap:wrap"><span class="grande" id="sem">—</span><span id="semPill"></span></div>
+      <div class="pista"><i id="semBarra" style="width:0"></i><b id="semRitmo" style="left:0"></b></div>
+      <div class="sub" id="semTexto">La raya marca dónde deberían ir a estas alturas de la semana.</div>
+    </div>
+  </section>
+
+  <div id="avisoRelleno" class="aviso" hidden></div>
+
+  <section class="grid2">
+    <div class="panel">
+      <h2>Por persona, esta semana</h2>
+      <div id="porPersona" class="reparto"><p class="vacio">Aparece cuando haya registros de esta semana.</p></div>
+    </div>
+    <div class="panel">
+      <h2>Por categoría, esta semana</h2>
+      <div id="porCategoria" class="reparto"><p class="vacio">Aparece cuando haya registros de esta semana.</p></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Curva semanal contra el ritmo</h2>
+    <div id="grafica" class="tabla"><p class="vacio">La curva aparece con dos o más registros de la semana.</p></div>
+  </section>
+
+  <section class="panel">
+    <h2>Registrar a mano</h2>
+    <p class="sub" style="margin:0">Desde Claude Desktop o la web: copia los porcentajes de Ajustes → Uso.</p>
+    <form id="forma">
+      <label for="fPersona">Persona<select id="fPersona"></select></label>
+      <label for="fCategoria">Categoría<select id="fCategoria"></select></label>
+      <label for="fSem">Semana %<input id="fSem" type="number" min="0" max="100" step="1" required></label>
+      <label for="fH5">Ventana 5 h %<input id="fH5" type="number" min="0" max="100" step="1"></label>
+      <label for="fNota" style="grid-column:1/-1">Nota<input id="fNota" type="text" maxlength="140" placeholder="Qué se hizo"></label>
+      <button type="submit">Guardar registro</button>
+      <span id="fEstado" class="sub" role="status"></span>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <h2>Reparto acordado</h2>
+      <button class="sec" id="guardarPlan" type="button">Guardar reparto</button>
+    </div>
+    <div class="grid2">
+      <div><div class="eyebrow" style="margin-bottom:8px">Personas (% de la semana)</div><div id="planPersonas" class="reparto"></div></div>
+      <div><div class="eyebrow" style="margin-bottom:8px">Categorías (% de la semana)</div><div id="planCategorias" class="reparto"></div></div>
+    </div>
+    <span id="planEstado" class="sub" role="status"></span>
+  </section>
+
+  <section class="panel">
+    <h2>Bitácora</h2>
+    <div class="tabla"><table>
+      <thead><tr><th>Cuándo</th><th>Persona</th><th>Categoría</th><th>Semana</th><th>5 h</th><th>Modelo</th><th>Nota</th></tr></thead>
+      <tbody id="bitacora"><tr><td colspan="7" class="vacio">Sin registros. Corre /consumo registrar en Claude Code o usa la forma de arriba.</td></tr></tbody>
+    </table></div>
+  </section>
+</div>
+
+<script>
+const PLAN_DEFECTO = {
+  personas: [{ nombre: "Persona 1", pct: 50 }, { nombre: "Persona 2", pct: 50 }],
+  categorias: [
+    { nombre: "programación", pct: 45 }, { nombre: "integraciones", pct: 20 },
+    { nombre: "ideas", pct: 10 }, { nombre: "marketing", pct: 15 }, { nombre: "personal", pct: 10 }
+  ]
+};
+const SEMANA = 7 * 24 * 3600 * 1000;
+let plan = structuredClone(PLAN_DEFECTO);
+let registros = [];
+let db = null;
+
+const $ = (id) => document.getElementById(id);
+const fmtHora = (t) => new Date(t).toLocaleString("es-MX", { weekday: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+const fmtDur = (ms) => { const m = Math.max(0, Math.round(ms / 60000)); const h = Math.floor(m / 60); return h ? `${h} h ${m % 60} min` : `${m} min`; };
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function semanaActual() {
+  const conReinicio = registros.filter((r) => r.semReinicia).sort((a, b) => b.t - a.t)[0];
+  if (!conReinicio) return null;
+  let fin = conReinicio.semReinicia;
+  while (fin < Date.now()) fin += SEMANA; // si ya pasó el reinicio, la semana corre desde ahí
+  return { inicio: fin - SEMANA, fin };
+}
+
+function color(delta) { return delta <= 0 ? "verde" : delta <= 10 ? "amarillo" : "rojo"; }
+
+function render() {
+  const ahora = Date.now();
+  const orden = [...registros].sort((a, b) => a.t - b.t);
+  const ultimo = orden[orden.length - 1];
+  const sem = semanaActual();
+
+  // Ventana de 5 h
+  if (ultimo && ultimo.h5 != null && ultimo.h5Reinicia && ultimo.h5Reinicia > ahora) {
+    $("h5").textContent = Math.round(ultimo.h5) + "%";
+    $("h5Barra").style.width = Math.min(100, ultimo.h5) + "%";
+    $("h5Texto").textContent = `Se reinicia ${fmtHora(ultimo.h5Reinicia)} (en ${fmtDur(ultimo.h5Reinicia - ahora)}). Lectura de ${fmtHora(ultimo.t)}.`;
+  } else {
+    $("h5").textContent = "—";
+    $("h5Barra").style.width = "0";
+    $("h5Texto").textContent = ultimo ? "La última lectura ya es de otra ventana." : "Sin registros todavía.";
+  }
+
+  // Semana y ritmo
+  const enSemana = sem ? orden.filter((r) => r.t >= sem.inicio && r.t < sem.fin && r.sem != null) : [];
+  const ultSem = enSemana[enSemana.length - 1];
+  if (sem && ultSem) {
+    const esperado = Math.min(100, ((ahora - sem.inicio) / SEMANA) * 100);
+    const c = color(ultSem.sem - esperado);
+    $("sem").textContent = Math.round(ultSem.sem) + "%";
+    $("semBarra").style.width = Math.min(100, ultSem.sem) + "%";
+    $("semRitmo").style.left = esperado + "%";
+    $("semPill").innerHTML = `<span class="pill ${c}">${{ verde: "Bajo el ritmo", amarillo: "Un poco arriba", rojo: "Sólo prioritario" }[c]}</span>`;
+    $("semTexto").textContent = `Ritmo a esta hora: ${Math.round(esperado)}%. Se reinicia ${fmtHora(sem.fin)}.`;
+  }
+
+  // Aviso de relleno
+  const aviso = $("avisoRelleno");
+  aviso.hidden = true;
+  if (ultimo && ultimo.h5Reinicia > ahora && ultimo.h5 != null) {
+    const falta = ultimo.h5Reinicia - ahora, queda = 100 - ultimo.h5;
+    if (falta <= 30 * 60000 && queda >= 40 * (falta / (30 * 60000))) {
+      const rojo = sem && ultSem && color(ultSem.sem - ((ahora - sem.inicio) / SEMANA) * 100) === "rojo";
+      aviso.textContent = rojo
+        ? `Queda ${Math.round(queda)}% de la ventana, pero la semana va en rojo: no rellenen.`
+        : `Queda ${Math.round(queda)}% de la ventana y ${fmtDur(falta)} para el reinicio: lancen algo del backlog de relleno.`;
+      aviso.hidden = false;
+    }
+  }
+
+  // Consumo atribuido: el delta semanal entre lecturas consecutivas va a la persona/categoría de la lectura nueva.
+  const porPersona = {}, porCategoria = {};
+  let previo = null;
+  for (const r of enSemana) {
+    const d = Math.max(0, r.sem - (previo ? previo.sem : 0));
+    previo = r;
+    porPersona[r.persona || "Sin nombre"] = (porPersona[r.persona || "Sin nombre"] || 0) + d;
+    porCategoria[r.categoria || "sin categoría"] = (porCategoria[r.categoria || "sin categoría"] || 0) + d;
+  }
+  pintarReparto("porPersona", porPersona, plan.personas);
+  pintarReparto("porCategoria", porCategoria, plan.categorias);
+  pintarGrafica(sem, enSemana);
+  pintarBitacora(orden);
+}
+
+function pintarReparto(id, usados, presupuesto) {
+  const el = $(id);
+  const nombres = [...new Set([...presupuesto.map((p) => p.nombre), ...Object.keys(usados)])];
+  if (!Object.keys(usados).length) { el.innerHTML = '<p class="vacio">Aparece cuando haya registros de esta semana.</p>'; return; }
+  el.innerHTML = nombres.map((n) => {
+    const usado = usados[n] || 0;
+    const tope = presupuesto.find((p) => p.nombre === n)?.pct ?? 0;
+    const frac = tope ? usado / tope : (usado ? 1.5 : 0);
+    const c = frac <= 0.8 ? "verde" : frac <= 1 ? "amarillo" : "rojo";
+    return `<div class="fila"><span>${esc(n)}</span><div class="pista"><i style="width:${Math.min(100, frac * 100)}%;background:var(--${c === "verde" ? "accent" : c === "amarillo" ? "warn" : "bad"})"></i></div><span class="num ${c}">${usado.toFixed(0)} / ${tope}%</span></div>`;
+  }).join("");
+}
+
+function pintarGrafica(sem, puntos) {
+  const el = $("grafica");
+  if (!sem || puntos.length < 2) { el.innerHTML = '<p class="vacio">La curva aparece con dos o más registros de la semana.</p>'; return; }
+  const W = 640, H = 220, L = 36, R = 12, T = 12, B = 28;
+  const x = (t) => L + ((t - sem.inicio) / SEMANA) * (W - L - R);
+  const y = (p) => T + (1 - p / 100) * (H - T - B);
+  let g = "";
+  for (const p of [0, 25, 50, 75, 100]) g += `<line x1="${L}" x2="${W - R}" y1="${y(p)}" y2="${y(p)}" stroke="var(--line)"/><text x="${L - 6}" y="${y(p) + 4}" text-anchor="end">${p}</text>`;
+  for (let d = 0; d <= 7; d++) {
+    const t = sem.inicio + d * SEMANA / 7;
+    g += `<text x="${x(t)}" y="${H - 8}" text-anchor="middle">${d === 7 ? "fin" : new Date(t).toLocaleDateString("es-MX", { weekday: "short" })}</text>`;
+  }
+  g += `<line x1="${x(sem.inicio)}" y1="${y(0)}" x2="${x(sem.fin)}" y2="${y(100)}" stroke="var(--muted)" stroke-dasharray="4 4"/>`;
+  const linea = puntos.map((r) => `${x(r.t).toFixed(1)},${y(r.sem).toFixed(1)}`).join(" ");
+  const area = `${x(puntos[0].t).toFixed(1)},${y(0)} ${linea} ${x(puntos[puntos.length - 1].t).toFixed(1)},${y(0)}`;
+  const u = puntos[puntos.length - 1];
+  g += `<polygon points="${area}" fill="var(--accent-soft)"/><polyline points="${linea}" fill="none" stroke="var(--accent)" stroke-width="2"/><circle cx="${x(u.t)}" cy="${y(u.sem)}" r="4" fill="var(--accent)"/>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:420px" role="img" aria-label="Consumo semanal contra la línea de ritmo">${g}</svg>`;
+}
+
+function pintarBitacora(orden) {
+  const filas = orden.slice(-40).reverse();
+  $("bitacora").innerHTML = filas.length ? filas.map((r) => `<tr><td class="num">${fmtHora(r.t)}</td><td>${esc(r.persona)}</td><td>${esc(r.categoria)}</td><td class="num">${r.sem ?? "—"}%</td><td class="num">${r.h5 ?? "—"}%</td><td>${esc(r.modelo || "")}</td><td class="nota">${esc(r.nota || "")}</td></tr>`).join("")
+    : '<tr><td colspan="7" class="vacio">Sin registros. Corre /consumo registrar en Claude Code o usa la forma de arriba.</td></tr>';
+}
+
+function pintarPlan() {
+  const fila = (grupo, p, i) => `<div class="fila"><span>${esc(p.nombre)}</span><span></span><input id="plan-${grupo}-${i}" type="number" min="0" max="100" value="${p.pct}" aria-label="% para ${esc(p.nombre)}"></div>`;
+  $("planPersonas").innerHTML = plan.personas.map((p, i) => fila("personas", p, i)).join("");
+  $("planCategorias").innerHTML = plan.categorias.map((p, i) => fila("categorias", p, i)).join("");
+  $("fPersona").innerHTML = plan.personas.map((p) => `<option>${esc(p.nombre)}</option>`).join("");
+  $("fCategoria").innerHTML = plan.categorias.map((p) => `<option>${esc(p.nombre)}</option>`).join("");
+}
+
+$("forma").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!db) { $("fEstado").textContent = "Inicia sesión en claude.ai para guardar."; return; }
+  const ultimo = [...registros].sort((a, b) => b.t - a.t)[0];
+  const r = {
+    t: Date.now(), persona: $("fPersona").value, categoria: $("fCategoria").value,
+    sem: Number($("fSem").value), h5: $("fH5").value === "" ? null : Number($("fH5").value),
+    semReinicia: ultimo?.semReinicia ?? null, h5Reinicia: null, modelo: "", nota: $("fNota").value.trim(), fuente: "manual"
+  };
+  try {
+    await db.collection("registros").doc(String(r.t)).set(r);
+    $("fEstado").textContent = "Guardado.";
+    $("fNota").value = "";
+  } catch (err) { $("fEstado").textContent = "No se pudo guardar: " + (err?.message || err?.code || "error"); }
+});
+
+$("guardarPlan").addEventListener("click", async () => {
+  if (!db) { $("planEstado").textContent = "Inicia sesión en claude.ai para guardar."; return; }
+  const nuevo = {
+    personas: plan.personas.map((p, i) => ({ nombre: p.nombre, pct: Number($("plan-personas-" + i).value) || 0 })),
+    categorias: plan.categorias.map((p, i) => ({ nombre: p.nombre, pct: Number($("plan-categorias-" + i).value) || 0 }))
+  };
+  const suma = nuevo.categorias.reduce((s, c) => s + c.pct, 0);
+  try {
+    await db.doc("ajustes/plan").set(nuevo);
+    $("planEstado").textContent = suma === 100 ? "Reparto guardado." : `Reparto guardado. Las categorías suman ${suma}%, no 100%.`;
+  } catch (err) { $("planEstado").textContent = "No se pudo guardar: " + (err?.message || err?.code || "error"); }
+});
+
+pintarPlan();
+render();
+setInterval(render, 60000);
+
+(async () => {
+  db = await window.claude?.use?.("db");
+  if (!db) { $("fEstado").textContent = "Sólo lectura: inicia sesión en claude.ai para registrar."; return; }
+  db.doc("ajustes/plan").onSnapshot((s) => {
+    const d = s.exists ? s.data() : null;
+    if (d?.personas?.length && d?.categorias?.length) { plan = d; pintarPlan(); render(); }
+  });
+  db.collection("registros").orderBy("t", "desc").limit(500).onSnapshot((snap) => {
+    registros = snap.docs.map((d) => d.data()).filter((r) => typeof r.t === "number");
+    render();
+  });
+})();
+</script>

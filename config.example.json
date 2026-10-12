@@ -1,0 +1,20 @@
+{
+  "persona": "Tu nombre",
+  "horario": { "inicio": "05:00", "fin": "20:00" },
+  "ping": { "activo": true, "modelo": "haiku", "claudeBin": "~/.local/bin/claude" },
+  "relleno": { "minutosAntes": 30, "minRestantePct": 40 },
+  "semaforo": { "amarilloHasta": 10 },
+  "tablero": "",
+  "delegar": {
+    "perfiles": {
+      "claude-otra-cuenta": {
+        "tipo": "claude",
+        "bin": "~/.local/bin/claude",
+        "permisos": "acceptEdits",
+        "herramientas": "Read,Edit,Write,Grep,Glob,Bash(git diff:*),Bash(git status:*),Bash(npx tsc:*),Bash(npx jest:*),Bash(grep:*),Bash(ls:*)"
+      },
+      "codex-lectura": { "tipo": "codex", "bin": "codex", "modelo": "", "sandbox": "read-only" },
+      "codex-escritura": { "tipo": "codex", "bin": "codex", "modelo": "", "sandbox": "workspace-write" }
+    }
+  }
+}
