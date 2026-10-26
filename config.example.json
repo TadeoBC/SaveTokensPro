@@ -42,5 +42,11 @@
         "sandbox": "workspace-write"
       }
     }
+  },
+  "memoria": {
+    "vault": "~/AI-MEMORY",
+    "budget": 1200,
+    "maxResultados": 6,
+    "maxFragmento": 600
   }
 }

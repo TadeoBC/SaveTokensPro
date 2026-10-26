@@ -42,6 +42,7 @@ function comando(perfil, encargo, salida) {
   if (perfil.tipo === 'codex') {
     const a = ['exec', '-s', perfil.sandbox || 'read-only', '-o', salida];
     if (perfil.modelo) a.push('-m', perfil.modelo);
+    if (perfil.esfuerzo) a.push('-c', `model_reasoning_effort=${perfil.esfuerzo}`);
     return [bin, [...a, encargo]];
   }
   const a = ['-p', encargo, '--output-format', 'text'];

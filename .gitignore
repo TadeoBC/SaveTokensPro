@@ -3,6 +3,7 @@ config.json
 backlog-relleno.md
 estado.json
 historial.jsonl
+tareas.jsonl
 ping-estado.json
 ping.log
 ultimo-registro.json
